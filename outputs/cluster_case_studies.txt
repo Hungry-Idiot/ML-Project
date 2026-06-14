@@ -1,0 +1,21 @@
+
+==============================
+id: 0
+gold: \left( 3, \frac{\pi}{2} \right)
+pred_answers: ['(3,\\frac{\\pi}{2})', '(3,\\frac{\\pi}{2})', '(3, \\frac{\\pi}{2})']
+answer_clusters: [{'canonical_answer': '(3,\\frac{\\pi}{2})', 'members': ['(3,\\frac{\\pi}{2})', '(3,\\frac{\\pi}{2})', '(3, \\frac{\\pi}{2})'], 'support_count': 3}]
+correct: True
+
+==============================
+id: 1
+gold: p - q
+pred_answers: ['p-q', 'p - q', 'p - q']
+answer_clusters: [{'canonical_answer': 'p-q', 'members': ['p-q', 'p - q', 'p - q'], 'support_count': 3}]
+correct: True
+
+==============================
+id: 15
+gold: 6 - 5i
+pred_answers: ['6 - 5i', '6-5i', '6-5i']
+answer_clusters: [{'canonical_answer': '6 - 5i', 'members': ['6 - 5i', '6-5i', '6-5i'], 'support_count': 3}]
+correct: True
