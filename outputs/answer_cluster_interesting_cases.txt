@@ -1,0 +1,71 @@
+
+==============================
+id: 15
+gold: 6 - 5i
+agent_answers: ['6 - 5i', '6 - 5i', '6-5i']
+answer_clusters: [{'canonical_answer': '6 - 5i', 'members': [{'agent': 'agent1', 'answer': '6 - 5i'}, {'agent': 'agent2', 'answer': '6 - 5i'}, {'agent': 'agent3', 'answer': '6-5i'}], 'support_count': 3}]
+selected_answer: 6 - 5i
+correct: True
+case_type: raw disagreement but equivalent cluster
+
+--- agent outputs tail ---
+
+Agent 1:
+Check: The rotation gives w = 6 - 5i.
+Final Answer: \boxed{6 - 5i}
+
+Agent 2:
+Check: The rotation of z about c by π/4 counterclockwise yields 6 - 5i, matching the existing cluster.
+Final Answer: \boxed{6 - 5i}
+
+Agent 3:
+Check: The rotation of z around c by π/4 counterclockwise gives w = 6 - 5i.
+Final Answer: \boxed{6-5i}
+
+==============================
+id: 25
+gold: 1,-2
+agent_answers: ['1, -2', '1,-2', '1, -2']
+answer_clusters: [{'canonical_answer': '1, -2', 'members': [{'agent': 'agent1', 'answer': '1, -2'}, {'agent': 'agent2', 'answer': '1,-2'}, {'agent': 'agent3', 'answer': '1, -2'}], 'support_count': 3}]
+selected_answer: 1, -2
+correct: True
+case_type: raw disagreement but equivalent cluster
+
+--- agent outputs tail ---
+
+Agent 1:
+Check: The functional equation yields a quadratic function, and solving f(n)=n gives n=1 and n=-2.
+Final Answer: \boxed{1, -2}
+
+Agent 2:
+Check: The functional equation leads to f(n)=n for n=1 and n=-2.
+Final Answer: \boxed{1,-2}
+
+Agent 3:
+Check: The functional equation implies f(n) = (n^2+3n-2)/2, so f(n)=n gives n=1 or -2.
+Final Answer: \boxed{1, -2}
+
+==============================
+id: 26
+gold: 144
+agent_answers: ['144', None, '144']
+answer_clusters: [{'canonical_answer': '144', 'members': [{'agent': 'agent1', 'answer': '144'}, {'agent': 'agent3', 'answer': '144'}], 'support_count': 2}]
+selected_answer: 144
+correct: True
+case_type: support_count is not 3
+
+--- agent outputs tail ---
+
+Agent 1:
+Check: Place the four other people in a circle (6 ways) then insert the three restricted people into three of the four gaps (4 ways) and arrange them (6 ways), giving 144 total arrangements.
+
+Final Answer: \boxed{144}
+
+Agent 2:
+Check: The number of circular arrangements where no two of the three specified people sit together is 144, computed by subtracting invalid cases from total circular permutations.
+
+Final Answer: \boxed
+
+Agent 3:
+Check: The answer agrees with the existing cluster and standard combinatorial reasoning.
+Final Answer: \boxed{144}
