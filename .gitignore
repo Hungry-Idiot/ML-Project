@@ -1,0 +1,18 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# local dataset
+data/
+
+# python cache
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.cache/
+
+# system/editor
+.DS_Store
+.vscode/
+.idea/

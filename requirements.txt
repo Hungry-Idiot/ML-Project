@@ -1,0 +1,7 @@
+datasets
+pandas
+tqdm
+python-dotenv
+openai
+sympy
+math-verify[antlr4_13_2]
