@@ -4,6 +4,14 @@ This repository contains a course project on multi-agent mathematical reasoning 
 
 The current main benchmark is **AMO-Bench-P**, the parser-based subset of AMO-Bench. The project initially used MATH-500 as a pilot benchmark, but MATH-500 quickly became too easy for distinguishing the proposed methods. The main experiments therefore moved to AMO-Bench-P, which better exposes failures of simple voting, answer clustering, and verification-based selection.
 
+## Documentation Index
+
+- Experiment log: [docs/EXPERIMENT_LOG.md](docs/EXPERIMENT_LOG.md)
+- Results summary: [docs/RESULTS_SUMMARY.md](docs/RESULTS_SUMMARY.md)
+- Next experiment plan: [docs/NEXT_EXPERIMENT_PLAN.md](docs/NEXT_EXPERIMENT_PLAN.md)
+- Scripts index: [scripts/README.md](scripts/README.md)
+- Outputs index: [outputs/README.md](outputs/README.md)
+
 ## Project Goal
 
 The goal is not to fully reproduce DeLM's asynchronous task-queue architecture. Instead, this project explores a lightweight DeLM-inspired framework for mathematical reasoning.

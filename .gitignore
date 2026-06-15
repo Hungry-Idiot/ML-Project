@@ -5,12 +5,19 @@
 
 # local dataset
 data/
+data/raw/
+data/downloads/
 
 # python cache
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
 .cache/
+
+# transient experiment outputs
+outputs/*api_errors.jsonl
+outputs/tmp*
+outputs/debug*
 
 # system/editor
 .DS_Store
