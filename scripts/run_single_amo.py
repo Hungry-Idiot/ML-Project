@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -12,6 +11,10 @@ from scripts.utils import (
     extract_boxed,
     safe_verify,
     call_llm_final_only,
+    read_jsonl,
+    read_ids,
+    load_done_ids,
+    append_jsonl,
 )
 
 IDS_PATH = Path("outputs/amo_parser_ids.txt")
@@ -24,42 +27,6 @@ MAX_TOKENS = int(os.getenv("AMO_MAX_TOKENS", "16000"))
 RETRY = int(os.getenv("AMO_RETRY", "1"))
 TEMPERATURE = float(os.getenv("AMO_TEMPERATURE", "0.7"))
 
-def read_ids(path: Path):
-    if not path.exists():
-        return None
-
-    ids = []
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                ids.append(int(line))
-
-    return set(ids)
-
-
-def read_jsonl(path: Path):
-    records = []
-    if not path.exists():
-        return records
-
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
-
-    return records
-
-
-def load_done_ids(path: Path):
-    done_ids = set()
-
-    for ex in read_jsonl(path):
-        done_ids.add(ex["id"])
-
-    return done_ids
-
 
 def main():
     if not DATA_PATH.exists():
@@ -67,7 +34,7 @@ def main():
 
     data = read_jsonl(DATA_PATH)
     client = get_client()
-    target_ids = read_ids(IDS_PATH)
+    target_ids = read_ids(IDS_PATH) if IDS_PATH.exists() else None
 
     if target_ids is not None:
         data = [ex for ex in data if ex["id"] in target_ids]
@@ -87,70 +54,68 @@ def main():
     total_seen = len(old_records)
     correct_seen = sum(1 for ex in old_records if ex.get("correct") is True)
 
-    with OUT_PATH.open("a", encoding="utf-8") as f:
-        for n, ex in enumerate(data, start=1):
-            idx = ex["id"]
+    for n, ex in enumerate(data, start=1):
+        idx = ex["id"]
 
-            if idx in done_ids:
-                continue
+        if idx in done_ids:
+            continue
 
-            problem = ex["problem"]
-            gold = ex["gold"]
+        problem = ex["problem"]
+        gold = ex["gold"]
 
-            print(
-                f"\n===== AMO Problem {n}/{len(data)}, "
-                f"id={idx}, question_id={ex.get('question_id')} ====="
-            )
+        print(
+            f"\n===== AMO Problem {n}/{len(data)}, "
+            f"id={idx}, question_id={ex.get('question_id')} ====="
+        )
 
-            result = call_llm_final_only(
-                client,
-                problem,
-                temperature=TEMPERATURE,
-                max_tokens=MAX_TOKENS,
-                retry=RETRY,
-            )
+        result = call_llm_final_only(
+            client,
+            problem,
+            temperature=TEMPERATURE,
+            max_tokens=MAX_TOKENS,
+            retry=RETRY,
+        )
 
-            raw_output = result.get("content", "")
-            finish_reason = result.get("finish_reason")
-            usage = result.get("usage")
+        raw_output = result.get("content", "")
+        finish_reason = result.get("finish_reason")
+        usage = result.get("usage")
 
-            pred_answer = extract_boxed(raw_output)
-            is_correct = safe_verify(gold, pred_answer)
+        pred_answer = extract_boxed(raw_output)
+        is_correct = safe_verify(gold, pred_answer)
 
-            record = {
-                "id": idx,
-                "question_id": ex.get("question_id"),
-                "answer_type": ex.get("answer_type"),
-                "problem": problem,
-                "gold": gold,
-                "raw_output": raw_output,
-                "pred_answer": pred_answer,
-                "correct": is_correct,
-                "finish_reason": finish_reason,
-                "usage": usage,
-                "max_tokens": MAX_TOKENS,
-                "temperature": TEMPERATURE,
-            }
+        record = {
+            "id": idx,
+            "question_id": ex.get("question_id"),
+            "answer_type": ex.get("answer_type"),
+            "problem": problem,
+            "gold": gold,
+            "raw_output": raw_output,
+            "pred_answer": pred_answer,
+            "correct": is_correct,
+            "finish_reason": finish_reason,
+            "usage": usage,
+            "max_tokens": MAX_TOKENS,
+            "temperature": TEMPERATURE,
+        }
 
-            if finish_reason == "api_error" or result.get("error"):
-                print("[SKIP] API error, do not save this example. Please rerun later.")
-                continue
+        if finish_reason == "api_error" or result.get("error"):
+            print("[SKIP] API error, do not save this example. Please rerun later.")
+            continue
 
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
-            f.flush()
+        append_jsonl(OUT_PATH, record)
 
-            total_seen += 1
-            correct_seen += int(is_correct)
+        total_seen += 1
+        correct_seen += int(is_correct)
 
-            print("gold:", gold)
-            print("pred_answer:", pred_answer)
-            print("correct:", is_correct)
-            print("finish_reason:", finish_reason)
+        print("gold:", gold)
+        print("pred_answer:", pred_answer)
+        print("correct:", is_correct)
+        print("finish_reason:", finish_reason)
 
-            if usage is not None:
-                print("usage:", usage)
+        if usage is not None:
+            print("usage:", usage)
 
-            print("running accuracy:", f"{correct_seen / total_seen:.2%}")
+        print("running accuracy:", f"{correct_seen / total_seen:.2%}")
 
     records = read_jsonl(OUT_PATH)
     total = len(records)

@@ -9,7 +9,19 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.utils import safe_verify, equivalent
+from scripts.utils import (
+    safe_verify,
+    read_jsonl,
+    write_jsonl,
+    choose_raw_majority,
+    cluster_answers,
+    choose_from_clusters,
+    normalize_answer,
+    pct,
+    short_text,
+    tail_text,
+    md_table,
+)
 
 
 SC3_PATH = Path("outputs/amo_parser_sc3.jsonl")
@@ -23,33 +35,6 @@ OUT_CASES_CSV = Path("outputs/amo_parser_sc3_analysis_cases.csv")
 
 
 _verify_cache: dict[tuple[str, str | None], bool] = {}
-_equiv_cache: dict[tuple[str | None, str | None], bool] = {}
-
-
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    if not path.exists():
-        return []
-
-    records = []
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
-    return records
-
-
-def write_jsonl(path: Path, records: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        for ex in records:
-            f.write(json.dumps(ex, ensure_ascii=False) + "\n")
-
-
-def pct(x: int | float, total: int | float) -> str:
-    if total == 0:
-        return "N/A"
-    return f"{x / total:.2%}"
 
 
 def verify_answer(gold: str, pred: str | None) -> bool:
@@ -59,30 +44,11 @@ def verify_answer(gold: str, pred: str | None) -> bool:
     return _verify_cache[key]
 
 
-def equiv_answer(a: str | None, b: str | None) -> bool:
-    key = (a, b)
-    rev_key = (b, a)
-
-    if key in _equiv_cache:
-        return _equiv_cache[key]
-    if rev_key in _equiv_cache:
-        return _equiv_cache[rev_key]
-
-    ans = equivalent(a, b)
-    _equiv_cache[key] = ans
-    return ans
-
-
 def normalize_raw(ans: str | None) -> str | None:
     """
     RawVote 只做最小清理，不做数学归一化。
     """
-    if ans is None:
-        return None
-    ans = str(ans).strip()
-    if not ans:
-        return None
-    return ans
+    return normalize_answer(ans)
 
 
 def get_pred_answers(ex: dict[str, Any]) -> list[str | None]:
@@ -105,95 +71,9 @@ def get_sample_records(ex: dict[str, Any]) -> list[dict[str, Any]]:
     return []
 
 
-def choose_raw_majority(pred_answers: list[str | None]) -> tuple[str | None, int, dict[str, int]]:
-    """
-    重新计算 RawVote，避免完全依赖 run 脚本里保存的 selected_answer。
-    tie-breaking: 票数相同则选择更早出现的答案。
-    """
-    normalized = [normalize_raw(a) for a in pred_answers]
-    valid = [a for a in normalized if a is not None]
-
-    if not valid:
-        return None, 0, {}
-
-    counts = Counter(valid)
-    max_count = max(counts.values())
-
-    for ans in normalized:
-        if ans is not None and counts[ans] == max_count:
-            return ans, max_count, dict(counts)
-
-    return None, 0, dict(counts)
-
-
-def cluster_answers(pred_answers: list[str | None]) -> list[dict[str, Any]]:
-    """
-    用 math-verify 做答案等价聚类。
-    注意：
-    - None 不加入 cluster。
-    - canonical_answer 使用该 cluster 第一个出现的答案。
-    - tie-breaking 由 first_seen 决定。
-    """
-    clusters: list[dict[str, Any]] = []
-
-    for i, ans in enumerate(pred_answers):
-        ans = normalize_raw(ans)
-        if ans is None:
-            continue
-
-        matched = False
-
-        for cluster in clusters:
-            if equiv_answer(cluster["canonical_answer"], ans):
-                cluster["members"].append({
-                    "sample_id": i,
-                    "answer": ans,
-                })
-                cluster["support_count"] += 1
-                matched = True
-                break
-
-        if not matched:
-            clusters.append({
-                "canonical_answer": ans,
-                "support_count": 1,
-                "first_seen": i,
-                "members": [{
-                    "sample_id": i,
-                    "answer": ans,
-                }],
-            })
-
-    clusters.sort(key=lambda c: (-c["support_count"], c["first_seen"]))
-    return clusters
-
-
 def choose_equiv_cluster(pred_answers: list[str | None]) -> tuple[str | None, int, list[dict[str, Any]]]:
     clusters = cluster_answers(pred_answers)
-
-    if not clusters:
-        return None, 0, []
-
-    best = clusters[0]
-    return best["canonical_answer"], best["support_count"], clusters
-
-
-def short_text(x: Any, max_len: int = 160) -> str:
-    if x is None:
-        return ""
-    s = str(x).replace("\n", " ").strip()
-    if len(s) <= max_len:
-        return s
-    return s[:max_len] + "..."
-
-
-def tail_text(x: Any, max_len: int = 800) -> str:
-    if x is None:
-        return ""
-    s = str(x).strip()
-    if len(s) <= max_len:
-        return s
-    return s[-max_len:]
+    return choose_from_clusters(clusters)
 
 
 def usage_value(sample_records: list[dict[str, Any]], key: str) -> int:
@@ -242,15 +122,6 @@ def summarize_group(cases: list[dict[str, Any]], group_key: str, metric_key: str
             "accuracy": pct(correct, total),
         })
     return rows
-
-
-def md_table(headers: list[str], rows: list[list[Any]]) -> str:
-    out = []
-    out.append("| " + " | ".join(headers) + " |")
-    out.append("| " + " | ".join(["---"] * len(headers)) + " |")
-    for row in rows:
-        out.append("| " + " | ".join(str(x) for x in row) + " |")
-    return "\n".join(out)
 
 
 def main():

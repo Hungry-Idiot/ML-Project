@@ -16,6 +16,12 @@ from scripts.utils import (
     extract_boxed,
     safe_verify,
     equivalent,
+    call_chat_completion,
+    read_jsonl,
+    read_ids,
+    load_done_ids,
+    normalize_answer,
+    pct,
 )
 
 
@@ -34,72 +40,13 @@ SLEEP_SECONDS = float(os.getenv("AMO_AC_SLEEP", "0.5"))
 LIMIT = int(os.getenv("AC_LIMIT", "0"))
 
 
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    records = []
-
-    if not path.exists():
-        return records
-
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
-
-    return records
-
-
-def read_ids(path: Path) -> set[int]:
+def read_required_ids(path: Path) -> set[int]:
     if not path.exists():
         raise FileNotFoundError(
             f"ID file not found: {path}\n"
             "Please run scripts/make_amo_parser_ids.py first."
         )
-
-    ids = set()
-
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                ids.add(int(line))
-
-    return ids
-
-
-def load_done_ids(path: Path) -> set[int]:
-    done = set()
-
-    for ex in read_jsonl(path):
-        if "id" in ex:
-            done.add(ex["id"])
-
-    return done
-
-
-def response_usage_to_dict(usage: Any) -> dict[str, Any] | None:
-    if usage is None:
-        return None
-
-    if hasattr(usage, "model_dump"):
-        return usage.model_dump()
-
-    if isinstance(usage, dict):
-        return usage
-
-    return {"raw": str(usage)}
-
-
-def normalize_answer(ans: str | None) -> str | None:
-    if ans is None:
-        return None
-
-    ans = str(ans).strip()
-
-    if not ans:
-        return None
-
-    return ans
+    return read_ids(path)
 
 
 def cluster_to_text(clusters: list[dict[str, Any]]) -> str:
@@ -244,45 +191,14 @@ Problem:
 
 
 def call_agent(client, problem: str, agent_id: int, clusters: list[dict[str, Any]]) -> dict[str, Any]:
-    model = os.getenv("MODEL_NAME")
-    if not model:
-        raise RuntimeError("MODEL_NAME is missing in .env")
-
     prompt = build_prompt(problem, agent_id, clusters)
 
-    try:
-        resp = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=TEMPERATURE,
-            max_tokens=MAX_TOKENS,
-        )
-
-        choice = resp.choices[0]
-        content = choice.message.content or ""
-        finish_reason = choice.finish_reason
-        usage = response_usage_to_dict(getattr(resp, "usage", None))
-
-        return {
-            "content": content,
-            "finish_reason": finish_reason,
-            "usage": usage,
-            "error": None,
-        }
-
-    except Exception as e:
-        return {
-            "content": "",
-            "finish_reason": "api_error",
-            "usage": None,
-            "error": repr(e),
-        }
-
-
-def pct(x: int, total: int) -> str:
-    if total == 0:
-        return "N/A"
-    return f"{x / total:.2%}"
+    return call_chat_completion(
+        client,
+        prompt,
+        temperature=TEMPERATURE,
+        max_tokens=MAX_TOKENS,
+    )
 
 
 def summarize_existing(path: Path) -> tuple[int, int]:
@@ -296,7 +212,7 @@ def main():
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"Data file not found: {DATA_PATH}")
 
-    target_ids = read_ids(IDS_PATH)
+    target_ids = read_required_ids(IDS_PATH)
     all_data = read_jsonl(DATA_PATH)
 
     data = [ex for ex in all_data if ex["id"] in target_ids]

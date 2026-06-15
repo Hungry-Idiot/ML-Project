@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from scripts.utils import read_jsonl, short_text, tail_text, md_table
+
 
 ANALYSIS_CASES_PATH = Path("outputs/amo_parser_sc3_analysis_cases.jsonl")
 SC3_PATH = Path("outputs/amo_parser_sc3.jsonl")
@@ -21,67 +23,12 @@ OUT_JSONL = Path("outputs/selector_failure_cases.jsonl")
 OUT_CSV = Path("outputs/selector_failure_cases.csv")
 
 
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    if not path.exists():
-        return []
-
-    records = []
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
-
-    return records
-
-
 def build_lookup(records: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:
     lookup = {}
     for ex in records:
         if "id" in ex:
             lookup[int(ex["id"])] = ex
     return lookup
-
-
-def short_text(x: Any, max_len: int = 180) -> str:
-    if x is None:
-        return ""
-
-    s = str(x).replace("\n", " ").strip()
-
-    if len(s) <= max_len:
-        return s
-
-    return s[:max_len] + "..."
-
-
-def tail_text(x: Any, max_len: int = 1200) -> str:
-    if x is None:
-        return ""
-
-    s = str(x).strip()
-
-    if len(s) <= max_len:
-        return s
-
-    return s[-max_len:]
-
-
-def md_table(headers: list[str], rows: list[list[Any]]) -> str:
-    lines = []
-    lines.append("| " + " | ".join(headers) + " |")
-    lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
-
-    for row in rows:
-        clean_row = []
-        for item in row:
-            text = str(item)
-            text = text.replace("\n", "<br>")
-            text = text.replace("|", "\\|")
-            clean_row.append(text)
-        lines.append("| " + " | ".join(clean_row) + " |")
-
-    return "\n".join(lines)
 
 
 def code_block(text: Any, lang: str = "") -> str:

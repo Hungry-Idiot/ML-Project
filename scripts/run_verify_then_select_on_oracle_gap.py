@@ -17,6 +17,14 @@ from scripts.utils import (
     extract_boxed,
     safe_verify,
     equivalent,
+    call_chat_completion,
+    read_jsonl,
+    append_jsonl,
+    load_done_ids,
+    normalize_answer,
+    short_text,
+    tail_text,
+    pct,
 )
 
 
@@ -37,86 +45,6 @@ TAIL_CHARS = int(os.getenv("VTS_TAIL_CHARS", "1200"))
 
 # 每个 candidate cluster 调几次 verifier。默认 1 次；如果想更稳，可以设为 2 或 3。
 VERIFIER_REPEATS = int(os.getenv("VTS_VERIFIER_REPEATS", "1"))
-
-
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    if not path.exists():
-        return []
-
-    records = []
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
-
-    return records
-
-
-def write_jsonl_append(path: Path, record: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(record, ensure_ascii=False) + "\n")
-        f.flush()
-
-
-def load_done_ids(path: Path) -> set[int]:
-    return {int(ex["id"]) for ex in read_jsonl(path) if "id" in ex}
-
-
-def response_usage_to_dict(usage: Any) -> dict[str, Any] | None:
-    if usage is None:
-        return None
-
-    if hasattr(usage, "model_dump"):
-        return usage.model_dump()
-
-    if isinstance(usage, dict):
-        return usage
-
-    return {"raw": str(usage)}
-
-
-def normalize_answer(ans: str | None) -> str | None:
-    if ans is None:
-        return None
-
-    ans = str(ans).strip()
-
-    if not ans:
-        return None
-
-    return ans
-
-
-def short_text(x: Any, max_len: int = 160) -> str:
-    if x is None:
-        return ""
-
-    s = str(x).replace("\n", " ").strip()
-
-    if len(s) <= max_len:
-        return s
-
-    return s[:max_len] + "..."
-
-
-def tail_text(x: Any, max_len: int) -> str:
-    if x is None:
-        return ""
-
-    s = str(x).strip()
-
-    if len(s) <= max_len:
-        return s
-
-    return s[-max_len:]
-
-
-def pct(x: int, total: int) -> str:
-    if total == 0:
-        return "N/A"
-    return f"{x / total:.2%}"
 
 
 def safe_int(x: Any, default: int | None = None) -> int | None:
@@ -339,35 +267,12 @@ Verifier notes:
 
 
 def call_llm(client, prompt: str) -> dict[str, Any]:
-    model = os.getenv("MODEL_NAME")
-    if not model:
-        raise RuntimeError("MODEL_NAME is missing in .env")
-
-    try:
-        resp = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=TEMPERATURE,
-            max_tokens=MAX_TOKENS,
-        )
-
-        choice = resp.choices[0]
-        content = choice.message.content or ""
-
-        return {
-            "content": content,
-            "finish_reason": choice.finish_reason,
-            "usage": response_usage_to_dict(getattr(resp, "usage", None)),
-            "error": None,
-        }
-
-    except Exception as e:
-        return {
-            "content": "",
-            "finish_reason": "api_error",
-            "usage": None,
-            "error": repr(e),
-        }
+    return call_chat_completion(
+        client,
+        prompt,
+        temperature=TEMPERATURE,
+        max_tokens=MAX_TOKENS,
+    )
 
 
 def parse_selected_cluster_id(text: str | None) -> int | None:
@@ -588,7 +493,7 @@ def main():
                 "error": "no_clusters",
                 "correct": False,
             }
-            write_jsonl_append(OUT_PATH, record)
+            append_jsonl(OUT_PATH, record)
             continue
 
         verifier_notes = []
@@ -643,7 +548,7 @@ def main():
                 "verifier_notes": verifier_notes,
                 "note": "Skipped because at least one verifier call had api_error.",
             }
-            write_jsonl_append(ERROR_PATH, error_record)
+            append_jsonl(ERROR_PATH, error_record)
             print("[SKIP] API error occurred. This case was not saved to main output.")
             continue
 
@@ -670,7 +575,7 @@ def main():
                 "selector_result": selector_result,
                 "note": "Skipped because selector call had api_error.",
             }
-            write_jsonl_append(ERROR_PATH, error_record)
+            append_jsonl(ERROR_PATH, error_record)
             print("[SKIP] Selector API error occurred. This case was not saved to main output.")
             continue
 
@@ -747,7 +652,7 @@ def main():
             "verifier_repeats": VERIFIER_REPEATS,
         }
 
-        write_jsonl_append(OUT_PATH, record)
+        append_jsonl(OUT_PATH, record)
 
         print("gold:", case.get("gold"))
         print("raw_selected_answer:", case.get("raw_selected_answer"))

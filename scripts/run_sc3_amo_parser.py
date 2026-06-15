@@ -14,6 +14,12 @@ from scripts.utils import (
     get_client,
     extract_boxed,
     safe_verify,
+    call_chat_completion,
+    read_jsonl,
+    read_ids,
+    load_done_ids,
+    choose_raw_majority,
+    pct,
 )
 
 
@@ -31,60 +37,13 @@ SLEEP_SECONDS = float(os.getenv("AMO_SC3_SLEEP", "0.5"))
 LIMIT = int(os.getenv("SC3_LIMIT", "0"))
 
 
-def read_jsonl(path: Path):
-    records = []
-
-    if not path.exists():
-        return records
-
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
-
-    return records
-
-
-def read_ids(path: Path) -> set[int]:
+def read_required_ids(path: Path) -> set[int]:
     if not path.exists():
         raise FileNotFoundError(
             f"ID file not found: {path}\n"
             "Please run scripts/make_amo_parser_ids.py first."
         )
-
-    ids = set()
-
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                ids.add(int(line))
-
-    return ids
-
-
-def load_done_ids(path: Path) -> set[int]:
-    done = set()
-
-    for ex in read_jsonl(path):
-        if "id" in ex:
-            done.add(ex["id"])
-
-    return done
-
-
-def response_usage_to_dict(usage: Any) -> dict[str, Any] | None:
-    if usage is None:
-        return None
-
-    if hasattr(usage, "model_dump"):
-        return usage.model_dump()
-
-    if isinstance(usage, dict):
-        return usage
-
-    return {"raw": str(usage)}
+    return read_ids(path)
 
 
 def call_llm_amo(client, problem: str) -> dict[str, Any]:
@@ -99,10 +58,6 @@ def call_llm_amo(client, problem: str) -> dict[str, Any]:
         "error": str | None,
     }
     """
-    model = os.getenv("MODEL_NAME")
-    if not model:
-        raise RuntimeError("MODEL_NAME is missing in .env")
-
     prompt = f"""
 You are solving a very hard olympiad-style math problem.
 
@@ -116,87 +71,19 @@ Problem:
 {problem}
 """
 
-    try:
-        resp = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=TEMPERATURE,
-            max_tokens=MAX_TOKENS,
-        )
-
-        choice = resp.choices[0]
-        content = choice.message.content or ""
-        finish_reason = choice.finish_reason
-        usage = response_usage_to_dict(getattr(resp, "usage", None))
-
-        return {
-            "content": content,
-            "finish_reason": finish_reason,
-            "usage": usage,
-            "error": None,
-        }
-
-    except Exception as e:
-        return {
-            "content": "",
-            "finish_reason": "api_error",
-            "usage": None,
-            "error": repr(e),
-        }
-
-
-def normalize_for_vote(answer: str | None) -> str | None:
-    """
-    SC3-RawVote baseline:
-    只做最小清理，不做数学等价归一化。
-    """
-    if answer is None:
-        return None
-
-    answer = answer.strip()
-
-    if not answer:
-        return None
-
-    return answer
-
-
-def choose_raw_majority(pred_answers: list[str | None]):
-    """
-    Choose answer by raw string majority.
-
-    Tie-breaking:
-    - higher vote count first
-    - if tied, choose the answer that appears earlier among samples
-    """
-    normalized = [normalize_for_vote(a) for a in pred_answers]
-    valid_answers = [a for a in normalized if a is not None]
-
-    if not valid_answers:
-        return None, 0, {}
-
-    counts = Counter(valid_answers)
-    max_count = max(counts.values())
-
-    for ans in normalized:
-        if ans is not None and counts[ans] == max_count:
-            return ans, max_count, dict(counts)
-
-    # 理论上不会走到这里
-    return None, 0, dict(counts)
-
-
-def pct(x: int, total: int) -> str:
-    if total == 0:
-        return "N/A"
-    return f"{x / total:.2%}"
+    return call_chat_completion(
+        client,
+        prompt,
+        temperature=TEMPERATURE,
+        max_tokens=MAX_TOKENS,
+    )
 
 
 def main():
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"Data file not found: {DATA_PATH}")
 
-    target_ids = read_ids(IDS_PATH)
+    target_ids = read_required_ids(IDS_PATH)
     all_data = read_jsonl(DATA_PATH)
 
     data = [ex for ex in all_data if ex["id"] in target_ids]
@@ -349,9 +236,9 @@ def main():
     raw_disagreement = 0
     for ex in records:
         valid = [
-            normalize_for_vote(a)
+            str(a).strip()
             for a in ex.get("pred_answers", [])
-            if normalize_for_vote(a) is not None
+            if a is not None and str(a).strip()
         ]
         if len(set(valid)) > 1:
             raw_disagreement += 1
