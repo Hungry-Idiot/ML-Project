@@ -1,6 +1,12 @@
-import json
+import sys
 from pathlib import Path
 from collections import Counter
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.utils import read_jsonl
 
 
 DATA_PATH = Path("data/AMO-Bench/test.jsonl")
@@ -12,13 +18,7 @@ PARSER_TYPES = {"number", "set", "variable"}
 
 
 def main():
-    records = []
-
-    with DATA_PATH.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
+    records = read_jsonl(DATA_PATH)
 
     counter = Counter(ex.get("answer_type") for ex in records)
 

@@ -1,6 +1,12 @@
-import json
+import sys
 from pathlib import Path
 from collections import Counter
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.utils import read_jsonl
 
 
 DATA_PATH = Path("data/AMO-Bench/test.jsonl")
@@ -10,16 +16,7 @@ def main():
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"File not found: {DATA_PATH}")
 
-    records = []
-
-    with DATA_PATH.open("r", encoding="utf-8") as f:
-        for i, line in enumerate(f):
-            line = line.strip()
-            if not line:
-                continue
-
-            ex = json.loads(line)
-            records.append(ex)
+    records = read_jsonl(DATA_PATH)
 
     print("File:", DATA_PATH)
     print("Total:", len(records))
