@@ -1,0 +1,6 @@
+Method,Total,Correct,Accuracy,Parse Fail,Parse Success
+Single-CoT full50,50,46,92.00%,3,94.00%
+Single-CoT valid47,47,46,97.87%,0,100.00%
+Self-Consistency-3 valid47,47,47,100.00%,0,100.00%
+Answer-Cluster-DeLM valid47,47,47,100.00%,0,100.00%
+Naive-DeLM fixed valid18,18,18,100.00%,0,100.00%

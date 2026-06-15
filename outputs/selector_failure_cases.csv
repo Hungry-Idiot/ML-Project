@@ -1,0 +1,5 @@
+id,question_id,answer_type,gold,single_pred_answer,single_correct,sc3_pred_answers,sample_correct_flags,correct_sample_ids,raw_selected_answer,raw_selected_support,selector_selected_answer,selector_selected_cluster_id,selector_selected_support,selector_correct,selector_used_fallback
+0,1,number,\boxed{6},6,True,"['6', '7', '7']","[True, False, False]",[0],7,2,7,0,2,False,False
+18,19,number,\boxed{666},703,False,"['666', '703', '703']","[True, False, False]",[0],703,2,703,0,2,False,False
+29,30,number,\boxed{3736},3735,False,"['3737', '916', '3736']","[False, False, True]",[2],3737,1,3737,0,1,False,False
+35,36,number,\boxed{343},180,False,"['181', '181', '343']","[False, False, True]",[2],181,2,181,0,2,False,False

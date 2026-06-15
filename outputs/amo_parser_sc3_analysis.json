@@ -1,0 +1,229 @@
+{
+  "input_file": "outputs/amo_parser_sc3.jsonl",
+  "single_file": "outputs/amo_parser_single.jsonl",
+  "total": 39,
+  "single_cot": {
+    "available": true,
+    "total": 39,
+    "correct": 4,
+    "accuracy": "10.26%"
+  },
+  "sc3_raw_vote": {
+    "correct": 7,
+    "accuracy": "17.95%",
+    "parse_fail": 1,
+    "parse_success": "97.44%"
+  },
+  "oracle_at_3": {
+    "correct": 11,
+    "accuracy": "28.21%",
+    "raw_vote_missed_oracle": 4
+  },
+  "sc3_equiv_cluster": {
+    "correct": 7,
+    "accuracy": "17.95%",
+    "equiv_recovers_raw": 0,
+    "raw_beats_equiv": 0
+  },
+  "disagreement": {
+    "raw_disagreement": 29,
+    "raw_disagreement_rate": "74.36%",
+    "equiv_disagreement": 28,
+    "equiv_disagreement_rate": "71.79%",
+    "raw_disagree_but_one_equiv_cluster": 1
+  },
+  "selection_diagnostics": {
+    "no_majority_support_le_1": 18,
+    "majority_wrong_support_ge_2": 19,
+    "unanimous_raw": 6,
+    "unanimous_wrong": 4,
+    "all_samples_wrong": 27,
+    "all_samples_correct": 2
+  },
+  "single_vs_sc3": {
+    "sc3_recovers_single": 6,
+    "sc3_regresses_single": 3,
+    "oracle_recovers_single": 9
+  },
+  "distributions": {
+    "answer_type": {
+      "number": 34,
+      "set": 3,
+      "variable": 2
+    },
+    "finish_reason_sample_level": {
+      "stop": 109,
+      "length": 8
+    },
+    "raw_selected_support": {
+      "2": 15,
+      "3": 6,
+      "1": 17,
+      "0": 1
+    },
+    "equiv_selected_support": {
+      "2": 17,
+      "3": 7,
+      "1": 14,
+      "0": 1
+    },
+    "raw_unique_count": {
+      "2": 14,
+      "1": 9,
+      "3": 15,
+      "0": 1
+    },
+    "equiv_cluster_count": {
+      "2": 16,
+      "1": 10,
+      "3": 12,
+      "0": 1
+    }
+  },
+  "token_usage": {
+    "total_sample_calls": 117,
+    "total_prompt_tokens": 38712,
+    "total_completion_tokens": 497330,
+    "total_tokens": 536042,
+    "avg_prompt_tokens_per_call": 330.87179487179486,
+    "avg_completion_tokens_per_call": 4250.683760683761,
+    "avg_total_tokens_per_call": 4581.555555555556
+  },
+  "sample_position_stats": {
+    "0": {
+      "total": 39,
+      "parsed": 36,
+      "correct": 8,
+      "parse_success": "92.31%",
+      "accuracy": "20.51%"
+    },
+    "1": {
+      "total": 39,
+      "parsed": 37,
+      "correct": 4,
+      "parse_success": "94.87%",
+      "accuracy": "10.26%"
+    },
+    "2": {
+      "total": 39,
+      "parsed": 36,
+      "correct": 4,
+      "parse_success": "92.31%",
+      "accuracy": "10.26%"
+    }
+  },
+  "group_stats": {
+    "raw_accuracy_by_support": [
+      {
+        "raw_selected_support": 0,
+        "total": 1,
+        "correct": 0,
+        "accuracy": "0.00%"
+      },
+      {
+        "raw_selected_support": 1,
+        "total": 17,
+        "correct": 5,
+        "accuracy": "29.41%"
+      },
+      {
+        "raw_selected_support": 2,
+        "total": 15,
+        "correct": 0,
+        "accuracy": "0.00%"
+      },
+      {
+        "raw_selected_support": 3,
+        "total": 6,
+        "correct": 2,
+        "accuracy": "33.33%"
+      }
+    ],
+    "equiv_accuracy_by_support": [
+      {
+        "equiv_selected_support": 0,
+        "total": 1,
+        "correct": 0,
+        "accuracy": "0.00%"
+      },
+      {
+        "equiv_selected_support": 1,
+        "total": 14,
+        "correct": 4,
+        "accuracy": "28.57%"
+      },
+      {
+        "equiv_selected_support": 2,
+        "total": 17,
+        "correct": 1,
+        "accuracy": "5.88%"
+      },
+      {
+        "equiv_selected_support": 3,
+        "total": 7,
+        "correct": 2,
+        "accuracy": "28.57%"
+      }
+    ],
+    "raw_accuracy_by_answer_type": [
+      {
+        "answer_type": "number",
+        "total": 34,
+        "correct": 5,
+        "accuracy": "14.71%"
+      },
+      {
+        "answer_type": "set",
+        "total": 3,
+        "correct": 1,
+        "accuracy": "33.33%"
+      },
+      {
+        "answer_type": "variable",
+        "total": 2,
+        "correct": 1,
+        "accuracy": "50.00%"
+      }
+    ],
+    "oracle_accuracy_by_answer_type": [
+      {
+        "answer_type": "number",
+        "total": 34,
+        "correct": 9,
+        "accuracy": "26.47%"
+      },
+      {
+        "answer_type": "set",
+        "total": 3,
+        "correct": 1,
+        "accuracy": "33.33%"
+      },
+      {
+        "answer_type": "variable",
+        "total": 2,
+        "correct": 1,
+        "accuracy": "50.00%"
+      }
+    ],
+    "equiv_accuracy_by_answer_type": [
+      {
+        "answer_type": "number",
+        "total": 34,
+        "correct": 5,
+        "accuracy": "14.71%"
+      },
+      {
+        "answer_type": "set",
+        "total": 3,
+        "correct": 1,
+        "accuracy": "33.33%"
+      },
+      {
+        "answer_type": "variable",
+        "total": 2,
+        "correct": 1,
+        "accuracy": "50.00%"
+      }
+    ]
+  }
+}
