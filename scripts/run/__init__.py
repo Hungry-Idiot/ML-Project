@@ -1,0 +1,2 @@
+"""Structured benchmark run entrypoints."""
+

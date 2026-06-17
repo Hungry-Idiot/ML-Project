@@ -1,93 +1,73 @@
 # Outputs Index
 
-This directory stores raw experiment records, summaries, reports, and operational error logs. Raw JSONL files should not be deleted because they contain per-question details that are expensive to regenerate.
+This directory stores experiment inputs, structured run outputs, and archived legacy results.
+
+## Root Layout
+
+The `outputs/` root should remain small:
+
+- `outputs/amo_parser_ids.txt`: parser-gradeable AMO-P ID list.
+- `outputs/amo_description_ids.txt`: description-type AMO ID list.
+- `outputs/runs/`: structured outputs for new experiments.
+- `outputs/archive/`: archived legacy flat outputs.
+- `outputs/cache/`: non-final cache files.
+
+Do not write new experiment result files directly into `outputs/`.
+
+## Structured Runs
+
+New benchmark outputs should use:
+
+```text
+outputs/runs/<run_id>/
+  manifest.json
+  config.json
+  sc3/
+    predictions.jsonl
+    api_errors.jsonl
+    analysis_cases.jsonl
+    analysis.json
+    analysis.md
+  repair/
+    main_agent/
+      results.jsonl
+      summary.json
+      report.md
+      api_errors.jsonl
+    delm_lite/
+      results.jsonl
+      summary.json
+      report.md
+      api_errors.jsonl
+  compare/
+  logs/
+```
+
+## Archived Legacy Outputs
+
+- `outputs/archive/legacy_<timestamp>/`: archived AMO-P flat output files such as `amo_parser_sc3.jsonl`, `feedback_repair_benchmark.jsonl`, selector failure reports, and verify-then-select diagnostics.
+- `outputs/archive/math500_legacy/`: historical MATH-500 pilot outputs.
+- `outputs/archive/misc_<timestamp>/`: older backups or provider-specific output snapshots.
+
+Archived result files are preserved locally for provenance and are ignored by Git except archive README files.
 
 ## File Types
 
 - `*.jsonl`: per-question detailed records.
-- `*_summary.json`: compact numeric summaries for quick result lookup.
-- `*_report.md` or analysis `*.md`: Markdown reports for writeups.
-- `*api_errors.jsonl`: API/network/service error logs; these are operational logs and may be empty or absent.
+- `summary.json`: compact numeric summaries.
+- `report.md` / `analysis.md`: Markdown reports for writeups.
+- `api_errors.jsonl`: API/network/service error logs; may be empty or absent.
 
-## AMO-P IDs and Baselines
+## Archive Tool
 
-| File | Type | Notes |
-| --- | --- | --- |
-| `outputs/amo_parser_ids.txt` | Core input | Parser-gradeable AMO-P subset IDs. |
-| `outputs/amo_description_ids.txt` | Core input | Description-type AMO IDs excluded from parser grading. |
-| `outputs/amo_parser_single.jsonl` | JSONL | Single-CoT detailed results. |
-| `outputs/amo_parser_sc3.jsonl` | JSONL | SC3-RawVote sample records and selected answers. |
-| `outputs/amo_parser_answer_cluster.jsonl` | JSONL | Answer-Cluster-v1 detailed results. |
-| `outputs/amo_parser_selector_on_sc3.jsonl` | JSONL | Selector-on-SC3 detailed results. |
+Use dry-run first:
 
-## SC3 Analysis
+```bash
+python scripts/analyze/archive_legacy_outputs.py --dry-run
+```
 
-| File | Type | Notes |
-| --- | --- | --- |
-| `outputs/amo_parser_sc3_analysis.json` | Summary JSON | Main baseline, Oracle@3, disagreement, and token-use summary. |
-| `outputs/amo_parser_sc3_analysis_cases.jsonl` | JSONL | Per-case analysis records. |
-| `outputs/amo_parser_sc3_analysis_cases.csv` | CSV | Spreadsheet-friendly case table. |
-| `outputs/amo_parser_sc3_analysis.md` | Markdown report | Report-writing reference. |
-| `outputs/selector_failure_cases.jsonl` | JSONL | RawVote-missed-Oracle diagnostic cases. |
-| `outputs/selector_failure_cases.csv` | CSV | Spreadsheet-friendly failure case table. |
-| `outputs/selector_failure_cases.md` | Markdown report | Failure-case report. |
+Apply only after reviewing the move plan:
 
-## Verify-then-Select Diagnostics
-
-| File | Type | Notes |
-| --- | --- | --- |
-| `outputs/verify_then_select_on_oracle_gap.jsonl` | JSONL | Verify-then-select records on oracle-gap cases. |
-| `outputs/verify_then_select_on_oracle_gap_report.md` | Markdown report | Diagnostic report. |
-
-## Conservative VTS
-
-| File | Type | Notes |
-| --- | --- | --- |
-| `outputs/conservative_vts_on_sc3.jsonl` | JSONL | Conservative VTS detailed records. |
-| `outputs/conservative_vts_on_sc3_summary.json` | Summary JSON | Quick result summary. |
-| `outputs/conservative_vts_on_sc3_report.md` | Markdown report | Report-writing reference. |
-
-## Strict Admission
-
-| File | Type | Notes |
-| --- | --- | --- |
-| `outputs/strict_admission_on_cvts.jsonl` | JSONL | Strict-admission detailed records. |
-| `outputs/strict_admission_on_cvts_summary.json` | Summary JSON | Policy comparison and final summary. |
-| `outputs/strict_admission_on_cvts_report.md` | Markdown report | Report-writing reference. |
-
-## Pairwise Override
-
-| File | Type | Notes |
-| --- | --- | --- |
-| `outputs/pairwise_override_on_changed_cases.jsonl` | JSONL | Pairwise verifier records for changed cases. |
-| `outputs/pairwise_override_final.jsonl` | JSONL | Final pairwise override decisions over the benchmark. |
-| `outputs/pairwise_override_on_changed_cases_summary.json` | Summary JSON | Quick result summary. |
-| `outputs/pairwise_override_on_changed_cases_report.md` | Markdown report | Report-writing reference. |
-
-## Type-aware VTS
-
-| File | Type | Notes |
-| --- | --- | --- |
-| `outputs/type_aware_vts_on_low_conf.jsonl` | JSONL | Type-aware verifier records. |
-| `outputs/type_aware_vts_on_low_conf_summary.json` | Summary JSON | Quick result summary. |
-| `outputs/type_aware_vts_on_low_conf_report.md` | Markdown report | Report-writing reference. |
-
-## VCR Repair
-
-The VCR repair script exists at `scripts/run_vcr_repair_on_low_conf.py`, but the following planned artifacts are not present in the current `outputs/` listing:
-
-- `outputs/vcr_repair_on_low_conf.jsonl`
-- `outputs/vcr_repair_on_low_conf_summary.json`
-- `outputs/vcr_repair_on_low_conf_report.md`
-
-## API Error Logs Present
-
-| File | Notes |
-| --- | --- |
-| `outputs/amo_parser_answer_cluster_api_errors.jsonl` | Answer-Cluster API error log. |
-| `outputs/amo_parser_sc3_api_errors.jsonl` | SC3 API error log. |
-| `outputs/amo_parser_selector_on_sc3_api_errors.jsonl` | Selector API error log. |
-
-## Legacy Outputs
-
-`outputs/math500_legacy/` contains historical MATH-500 pilot outputs. Keep these for provenance, but do not treat them as current AMO-P mainline results.
+```bash
+python scripts/analyze/archive_legacy_outputs.py --apply
+```

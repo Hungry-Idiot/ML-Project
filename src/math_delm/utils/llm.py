@@ -43,7 +43,7 @@ def get_client() -> OpenAI:
 
     api_key = os.getenv("OPENAI_API_KEY")
     base_url = os.getenv("OPENAI_BASE_URL")
-    timeout = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "600"))
+    timeout = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "120"))
 
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY is missing in .env")
@@ -99,6 +99,11 @@ def responses_usage_to_legacy_dict(usage: Any) -> dict[str, Any] | None:
 def _use_openai_responses_api() -> bool:
     _load_env()
     return os.getenv("OPENAI_USE_RESPONSES_API", "0") == "1"
+
+
+def _request_timeout_seconds() -> float:
+    _load_env()
+    return float(os.getenv("REQUEST_TIMEOUT_SECONDS", "120"))
 
 
 def _openai_reasoning_effort() -> str:
@@ -222,9 +227,11 @@ def _call_openai_responses_api(
     print("[LLM CONFIG]", {
         "provider_api": "openai_responses",
         "model": model,
+        "use_responses_api": True,
         "reasoning_effort": reasoning_effort,
         "max_output_tokens": max_tokens,
         "temperature": temperature,
+        "request_timeout_seconds": _request_timeout_seconds(),
     })
 
     try:
@@ -308,6 +315,9 @@ def call_chat_completion(
                 "model": model,
                 "max_tokens": max_tokens,
                 "temperature": temperature,
+                "use_responses_api": False,
+                "reasoning_effort": os.getenv("OPENAI_REASONING_EFFORT", "low").strip().lower(),
+                "request_timeout_seconds": _request_timeout_seconds(),
                 "deepseek_thinking": thinking_mode,
             })
 

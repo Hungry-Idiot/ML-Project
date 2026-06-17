@@ -11,6 +11,7 @@ data/downloads/
 # python cache
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .ipynb_checkpoints/
 .cache/
 
@@ -18,6 +19,18 @@ __pycache__/
 outputs/*api_errors.jsonl
 outputs/tmp*
 outputs/debug*
+outputs/archive/**
+!outputs/archive/
+!outputs/archive/README.md
+
+outputs/cache/**
+!outputs/cache/
+!outputs/cache/README.md
+
+outputs/runs/**
+!outputs/runs/
+!outputs/runs/README.md
+*.log
 
 # system/editor
 .DS_Store
